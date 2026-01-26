@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Popover</title>
+
+  <style>
+    :root{
+
+      --bg:#f2f4f7;
+      --fg:#0f172a;
+      --muted:#64748b;
+
+      --surface:#fff;
+      --border:#e2e8f0;
+
+      --accent:#4f46e5;
+      --hover:color-mix(in oklab,#000 8%,transparent);
+
+      --btn-size:48px;
+      --menu-width:196px;
+
+      --radius-closed:24px;
+      --radius-open:26px;
+
+      --shadow:0 2px 10px rgb(15 23 42/.06);
+
+      --dur-panel:600ms;
+      --dur-content:200ms;
+      --panel-open-fallback:334px;
+
+      --spring:linear(0,0.008,0.0299,0.0628,0.1044,0.1522,0.2046,0.2599,0.3166,0.3737,0.4302,0.4853,0.5385,0.5892,0.6371,0.682,0.7238,0.7623,0.7975,0.8295,0.8584,0.8843,0.9073,0.9276,0.9453,0.9607,0.974,0.9852,0.9947,1.0025,1.0089,1.014,1.018,1.0209,1.023,1.0244,1.0252,1.0254,1.0252,1.0246,1.0238,1.0227,1.0215,1.0202,1.0188,1.0173,1.0159,1.0144,1.013,1.0117,1.0104,1.0092,1.0081,1.007,1.006,1.0051,1.0043,1.0036,1.0029,1.0023,1.0018,1.0014,1.001,1.0007,1.0004,1.0001,0.9999,0.9998,0.9996,0.9995,0.9995,0.9994,0.9994,0.9994,0.9994,0.9994,0.9994,0.9994,0.9994,0.9995,0.9995,0.9995,0.9996,0.9996,0.9996,0.9997,0.9997,0.9997,0.9998,0.9998,0.9998,0.9998,0.9999,0.9999,0.9999,0.9999,0.9999,1,1,1,1);
+
+      --ease-out-quart:cubic-bezier(0.25,1,0.5,1);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--fg);
+      font-family:sans-serif;
+    }
+
+    .ui{
+      position:absolute;
+      top: calc(75% - 24px);
+      left: calc(50% - 24px);
+
+      & .btn{
+        anchor-name:--a;
+        width:var(--btn-size);
+        height:var(--btn-size);
+        border-radius:999px;
+        border:1px solid var(--border);
+        background:var(--surface);
+        box-shadow:var(--shadow);
+        display:grid;
+        place-items:center;
+        cursor:pointer;
+        user-select:none;
+        -webkit-tap-highlight-color:transparent;
+        opacity:1;
+        transition:transform .2s;
+
+        &:focus-visible{outline:2px solid color-mix(in oklab,var(--accent) 35%,transparent);outline-offset:3px}
+        &:hover{scale:1.08}
+        &:active{scale:.95}
+
+        & img{width:20px;height:20px}
+      }
+
+      &:has(.pop:popover-open) .btn{
+        opacity:0;
+        scale:1;
+        pointer-events:none;
+        transition:opacity 0s linear 0s;
+      }
+
+      &.is-closing .btn{
+        opacity:0;
+        pointer-events:none;
+        scale:1;
+      }
+    }
+
+    .pop{
+      &[popover]{
+
+        inset:auto;
+
+        position-anchor:--a;
+        bottom:anchor(bottom);
+        left:anchor(center);
+        translate:-50% 0;
+
+        inline-size:anchor-size(width);
+        block-size:anchor-size(height);
+        interpolate-size:allow-keywords;
+
+        padding:0;
+        overflow:clip;
+
+        background:var(--surface);
+        border:1px solid var(--border);
+        box-shadow:var(--shadow);
+        border-radius:50%;
+        transform-origin:center bottom;
+
+        transition:
+                inline-size var(--dur-panel) var(--spring),
+                block-size var(--dur-panel) var(--spring),
+                translate var(--dur-panel) var(--spring),
+                border-radius var(--dur-panel) var(--spring),
+                box-shadow var(--dur-panel),
+                opacity var(--dur-content),
+                display var(--dur-panel) allow-discrete,
+                overlay var(--dur-panel) allow-discrete;
+
+        &::backdrop{background:transparent}
+
+        & .cap{
+          position:absolute;
+          inset:0;
+          display:grid;
+          place-items:center;
+          pointer-events:none;
+          transition:opacity var(--dur-content) var(--spring);
+          transition-delay:60ms;
+
+          & img{width:20px;height:20px}
+        }
+
+        & .menu{
+          position:relative;
+          anchor-scope:--menu-hover;
+          padding:8px;
+          opacity:0;
+          translate:0 -6px;
+          pointer-events:none;
+          transition:
+                  opacity var(--dur-content) var(--spring),
+                  translate var(--dur-content) var(--spring);
+
+          & .hover-bg{
+            position:absolute;
+            z-index:0;
+            left:anchor(left);
+            top:anchor(top);
+            inline-size:anchor-size(width);
+            block-size:anchor-size(height);
+            border-radius:24px;
+            background:var(--hover);
+            position-anchor:--menu-hover;
+            opacity:0;
+            transition:top 0s 1s,opacity .1s var(--ease-out-quart);
+            pointer-events:none;
+          }
+
+          & .it{
+            position:relative;
+            z-index:1;
+            width:100%;
+            border:0;
+            background:transparent;
+            appearance:none;
+
+            display:grid;
+            grid-template-columns:18px 1fr;
+            gap:12px;
+            align-items:center;
+            justify-items:start;
+
+            padding:12px;
+            border-radius:16px;
+            font-size:1rem;
+            color:var(--fg);
+            cursor:pointer;
+            user-select:none;
+            text-align:left;
+
+            &:first-child{anchor-name:--menu-hover}
+            &:is(:hover,:focus-visible){anchor-name:--menu-hover}
+            &:active{translate:0 2px}
+
+            & img{width:16px;height:16px}
+          }
+
+          & hr{
+            height:2px;
+            border:0;
+            margin:8px 0;
+            background:color-mix(in oklab,var(--border) 75%,#fff);
+            border-radius:999px;
+          }
+        }
+      }
+
+      &:popover-open{
+
+        inline-size:min(var(--menu-width),calc(100vw - 24px));
+        block-size:auto;
+
+        border-radius:var(--radius-open);
+        box-shadow:var(--shadow);
+
+        & .cap{
+          opacity:0;
+          scale:.96;
+          transition-delay:0ms;
+        }
+
+        & .menu{
+          opacity:1;
+          translate:0 0;
+          pointer-events:auto;
+          transition-delay:70ms;
+        }
+      }
+    }
+
+    @supports not (interpolate-size: allow-keywords){
+      .pop[popover]{block-size:var(--btn-size)}
+      .pop:popover-open{block-size:var(--panel-open-fallback)}
+    }
+
+    .menu:has(.it:is(:hover,:focus-visible)) .hover-bg{
+      top:anchor(top);
+      opacity:1;
+      transition:
+              top .3s var(--ease-out-quart),
+              opacity .3s .15s var(--ease-out-quart);
+    }
+
+    @starting-style{
+      .pop:popover-open{
+        inline-size:anchor-size(width);
+        block-size:anchor-size(height);
+        border-radius:var(--radius-closed);
+        box-shadow:var(--shadow);
+        translate:-50% 0;
+
+        & .cap{opacity:1;scale:1}
+        & .menu{opacity:0;translate:0 -6px}
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div class="ui">
+  <button class="btn" popovertarget="p" aria-label="Share">
+    <img src="https://api.iconify.design/lucide:share-2.svg" alt="" >
+  </button>
+
+  <div id="p" class="pop" popover="auto" role="menu" aria-label="Share">
+    <div class="cap" >
+      <img src="https://api.iconify.design/lucide:share-2.svg" alt="" >
+    </div>
+
+    <div class="menu">
+      <span class="hover-bg" ></span>
+
+      <button class="it" role="menuitem" popovertarget="p" popovertargetaction="hide">
+        <img src="https://api.iconify.design/simple-icons:x.svg" alt="" >
+        <span>X</span>
+      </button>
+
+      <button class="it" role="menuitem" popovertarget="p" popovertargetaction="hide">
+        <img src="https://api.iconify.design/simple-icons:facebook.svg" alt="" >
+        <span>Facebook</span>
+      </button>
+
+      <button class="it" role="menuitem" popovertarget="p" popovertargetaction="hide">
+        <img src="https://api.iconify.design/simple-icons:instagram.svg" alt="" >
+        <span>Instagram</span>
+      </button>
+
+      <button class="it" role="menuitem" popovertarget="p" popovertargetaction="hide">
+        <img src="https://api.iconify.design/simple-icons:bluesky.svg" alt="" >
+        <span>Bluesky</span>
+      </button>
+
+      <button class="it" role="menuitem" popovertarget="p" popovertargetaction="hide">
+        <img src="https://api.iconify.design/simple-icons:threads.svg" alt="" >
+        <span>Threads</span>
+      </button>
+
+      <button class="it" role="menuitem" popovertarget="p" popovertargetaction="hide">
+        <img src="https://api.iconify.design/simple-icons:line.svg" alt="" >
+        <span>LINE</span>
+      </button>
+
+      <hr />
+
+      <button class="it" role="menuitem" popovertarget="p" popovertargetaction="hide">
+        <img src="https://api.iconify.design/lucide:link.svg" alt="" >
+        <span>Copy link</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const ui = document.querySelector(".ui");
+  const popover = document.querySelector("#p");
+  let closeTimer = 0;
+
+  popover?.addEventListener("beforetoggle", (e) => {
+    window.clearTimeout(closeTimer);
+    if (e.newState === "closed") {
+      ui?.classList.add("is-closing");
+      const closeMs = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--dur-panel"));
+      closeTimer = window.setTimeout(() => ui?.classList.remove("is-closing"), closeMs);
+      const onCloseEnd = (event) => {
+        if (event.propertyName.includes("-size")) {
+          ui?.classList.remove("is-closing");
+          popover.removeEventListener("transitionend", onCloseEnd);
+        }
+      };
+      popover.addEventListener("transitionend", onCloseEnd);
+    } else {
+      ui?.classList.remove("is-closing");
+    }
+  });
+</script>
+
+</body>
+</html>
